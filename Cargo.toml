@@ -1,5 +1,5 @@
 [package]
-name = "blueshift_escrow"
+name = "pinocchio_escrow"
 version = "0.1.0"
 edition = "2021"
 
