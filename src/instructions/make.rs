@@ -1,6 +1,5 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::Seed, program_error::ProgramError,
-    pubkey::find_program_address, ProgramResult,
+    account_info::AccountInfo, instruction::Seed, program_error::ProgramError, pubkey::find_program_address, ProgramResult
 };
 use pinocchio_token::instructions::Transfer;
 
@@ -27,9 +26,9 @@ pub struct MakeAccounts<'a> {
 impl<'a> TryFrom<&'a [AccountInfo]> for MakeAccounts<'a> {
     type Error = ProgramError;
 
-    fn try_from(account: &'a [AccountInfo]) -> Result<Self, Self::Error> {
+    fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
         let [maker, escrow, mint_a, mint_b, maker_ata_a, vault, system_program, token_program, _] =
-            account
+            accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
@@ -66,9 +65,19 @@ impl<'a> TryFrom<&'a [u8]> for MakeInstructionData {
             return Err(ProgramError::InvalidInstructionData);
         }
 
-        let seed = u64::from_le_bytes(data[0..8].try_into().unwrap());
-        let receive = u64::from_le_bytes(data[8..16].try_into().unwrap());
-        let amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+        let seed_bytes: [u8; 8] = data[0..8]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+        let receive_bytes: [u8; 8] = data[8..16]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+        let amount_bytes: [u8; 8] = data[16..24]
+            .try_into()
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+        let seed = u64::from_le_bytes(seed_bytes);
+        let receive = u64::from_le_bytes(receive_bytes);
+        let amount = u64::from_le_bytes(amount_bytes);
 
         if amount == 0 {
             return Err(ProgramError::InvalidInstructionData);
@@ -88,10 +97,10 @@ pub struct Make<'a> {
     pub bump: u8,
 }
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Make<'a> {
+impl<'a> TryFrom<(&'a [AccountInfo], &'a [u8])> for Make<'a> {
     type Error = ProgramError;
 
-    fn try_from((data, accounts): (&'a [u8], &'a [AccountInfo])) -> Result<Self, Self::Error> {
+    fn try_from((accounts, data): (&'a [AccountInfo], &'a [u8])) -> Result<Self, Self::Error> {
         let accounts = MakeAccounts::try_from(accounts)?;
         let instruction_data = MakeInstructionData::try_from(data)?;
 
@@ -120,7 +129,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Make<'a> {
             Escrow::LEN,
         )?;
 
-        AssociatedTokenAccount::init(
+        AssociatedTokenAccount::init_if_needed(
             accounts.vault,
             accounts.mint_a,
             accounts.maker,
@@ -134,7 +143,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Make<'a> {
             instruction_data,
             bump,
         })
-    } 
+    }
 }
 
 impl<'a> Make<'a> {
@@ -145,12 +154,12 @@ impl<'a> Make<'a> {
         let escrow = Escrow::load_mut(data.as_mut())?;
 
         escrow.set_inner(
-            self.instruction_data.seed, 
-            *self.accounts.maker.key(), 
-            *self.accounts.mint_a.key(), 
-            *self.accounts.mint_b.key(), 
-            self.instruction_data.receive, 
-            [self.bump]
+            self.instruction_data.seed,
+            *self.accounts.maker.key(),
+            *self.accounts.mint_a.key(),
+            *self.accounts.mint_b.key(),
+            self.instruction_data.receive,
+            [self.bump],
         );
 
         Transfer {
@@ -158,7 +167,8 @@ impl<'a> Make<'a> {
             to: self.accounts.vault,
             authority: self.accounts.maker,
             amount: self.instruction_data.amount,
-        }.invoke()?;
+        }
+        .invoke()?;
 
         Ok(())
     }
