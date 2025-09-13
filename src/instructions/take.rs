@@ -9,7 +9,8 @@ use pinocchio_token::instructions::{CloseAccount, Transfer};
 
 use crate::{
     instructions::{
-        AccountCheck, AccountClose, AssociatedTokenAccount, AssociatedTokenAccountCheck, AssociatedTokenAccountInit, MintInterface, ProgramAccount, SignerAccount, TokenAccount
+        AccountCheck, AccountClose, AssociatedTokenAccount, AssociatedTokenAccountCheck,
+        AssociatedTokenAccountInit, MintInterface, ProgramAccount, SignerAccount, TokenAccount,
     },
     state::Escrow,
 };
@@ -23,7 +24,6 @@ pub struct TakeAccounts<'a> {
     pub vault: &'a AccountInfo,
     pub taker_ata_a: &'a AccountInfo,
     pub taker_ata_b: &'a AccountInfo,
-    pub maker_ata_a: &'a AccountInfo,
     pub maker_ata_b: &'a AccountInfo,
     pub system_program: &'a AccountInfo,
     pub token_program: &'a AccountInfo,
@@ -33,7 +33,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for TakeAccounts<'a> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
-        let [taker, maker, escrow, mint_a, mint_b, vault, taker_ata_a, taker_ata_b, maker_ata_a, maker_ata_b, system_program, token_program, _] =
+        let [taker, maker, escrow, mint_a, mint_b, vault, taker_ata_a, taker_ata_b, maker_ata_b, system_program, token_program, _] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -55,7 +55,6 @@ impl<'a> TryFrom<&'a [AccountInfo]> for TakeAccounts<'a> {
             vault,
             taker_ata_a,
             taker_ata_b,
-            maker_ata_a,
             maker_ata_b,
             system_program,
             token_program,
@@ -124,6 +123,7 @@ impl<'a> Take<'a> {
             Seed::from(&bump_binding),
         ];
         let signer = Signer::from(&escrow_seeds);
+        let signers = core::slice::from_ref(&signer);
 
         let amount = TokenAccount::get_amount(self.accounts.vault)?;
 
@@ -132,20 +132,23 @@ impl<'a> Take<'a> {
             to: self.accounts.taker_ata_a,
             authority: self.accounts.escrow,
             amount,
-        }.invoke_signed(&[signer.clone()])?;
+        }
+        .invoke_signed(signers)?;
 
         CloseAccount {
             account: self.accounts.vault,
             destination: self.accounts.maker,
             authority: self.accounts.escrow,
-        }.invoke_signed(&[signer.clone()])?;
+        }
+        .invoke_signed(signers)?;
 
         Transfer {
             from: self.accounts.taker_ata_b,
             to: self.accounts.maker_ata_b,
             authority: self.accounts.taker,
             amount: escrow.receive,
-        }.invoke()?;
+        }
+        .invoke()?;
 
         drop(data);
         ProgramAccount::close(self.accounts.escrow, self.accounts.taker)?;
