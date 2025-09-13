@@ -1,13 +1,14 @@
 #![no_std]
 
 use pinocchio::{
-    account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
-    ProgramResult,
+    account_info::AccountInfo, entrypoint, nostd_panic_handler, program_error::ProgramError,
+    pubkey::Pubkey, ProgramResult,
 };
 
-use crate::instructions::{Make, Take};
+use crate::instructions::{Make, Refund, Take};
 
 entrypoint!(process_instruction);
+nostd_panic_handler!();
 
 pub mod errors;
 pub mod instructions;
@@ -25,9 +26,9 @@ fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     match instruction_data.split_first() {
-        Some((Make::DISCRIMINATOR, data)) => Make::try_from((data, accounts))?.process(),
+        Some((Make::DISCRIMINATOR, data)) => Make::try_from((accounts, data))?.process(),
         Some((Take::DISCRIMINATOR, _)) => Take::try_from(accounts)?.process(),
-        // Some((Refund::DISCRIMINATOR, _)) => Refund::try_from(accounts)?.process(),
+        Some((Refund::DISCRIMINATOR, _)) => Refund::try_from(accounts)?.process(),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
