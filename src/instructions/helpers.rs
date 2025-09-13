@@ -183,10 +183,7 @@ impl AccountCheck for TokenAccount {
             return Err(PinocchioError::InvalidOwner.into());
         }
 
-        if account
-            .data_len()
-            .ne(&pinocchio_token::state::TokenAccount::LEN)
-        {
+        if account.data_len() != pinocchio_token::state::TokenAccount::LEN {
             return Err(PinocchioError::InvalidAccountData.into());
         }
 
@@ -260,11 +257,11 @@ impl AccountCheck for Mint2022Account {
 
         let data = account.try_borrow_data()?;
 
-        if data.len().ne(&pinocchio_token::state::Mint::LEN) {
-            if data.len().le(&TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET) {
+        if data.len() != pinocchio_token::state::Mint::LEN {
+            if data.len() <= TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET {
                 return Err(PinocchioError::InvalidAccountData.into());
             }
-            if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET].ne(&TOKEN_2022_MINT_DISCRIMINATOR) {
+            if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET] != TOKEN_2022_MINT_DISCRIMINATOR {
                 return Err(PinocchioError::InvalidAccountData.into());
             }
         }
@@ -325,13 +322,11 @@ impl AccountCheck for MintAccount2022Account {
 
         let data = account.try_borrow_data()?;
 
-        if data.len().ne(&pinocchio_token::state::TokenAccount::LEN) {
-            if data.len().le(&TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET) {
+        if data.len() != pinocchio_token::state::TokenAccount::LEN {
+            if data.len() <= TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET {
                 return Err(PinocchioError::InvalidAccountData.into());
             }
-            if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET]
-                .ne(&TOKEN_2022_TOKEN_ACCOUNT_DISCRIMINATOR)
-            {
+            if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET] != TOKEN_2022_TOKEN_ACCOUNT_DISCRIMINATOR {
                 return Err(PinocchioError::InvalidAccountData.into());
             }
         }
@@ -386,20 +381,18 @@ impl AccountCheck for MintInterface {
         if !account.is_owned_by(&TOKEN_2022_PROGRAM_ID) {
             if !account.is_owned_by(&pinocchio_token::ID) {
                 return Err(PinocchioError::InvalidOwner.into());
-            } else {
-                if account.data_len().ne(&pinocchio_token::state::Mint::LEN) {
-                    return Err(PinocchioError::InvalidAccountData.into());
-                }
+            }
+            if account.data_len() != pinocchio_token::state::Mint::LEN {
+                return Err(PinocchioError::InvalidAccountData.into());
             }
         } else {
             let data = account.try_borrow_data()?;
 
-            if data.len().ne(&pinocchio_token::state::Mint::LEN) {
-                if data.len().le(&TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET) {
+            if data.len() != pinocchio_token::state::Mint::LEN {
+                if data.len() <= TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET {
                     return Err(PinocchioError::InvalidAccountData.into());
                 }
-                if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET].ne(&TOKEN_2022_MINT_DISCRIMINATOR)
-                {
+                if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET] != TOKEN_2022_MINT_DISCRIMINATOR {
                     return Err(PinocchioError::InvalidAccountData.into());
                 }
             }
@@ -416,24 +409,18 @@ impl AccountCheck for TokenAccountInterface {
         if !account.is_owned_by(&TOKEN_2022_PROGRAM_ID) {
             if !account.is_owned_by(&pinocchio_token::ID) {
                 return Err(PinocchioError::InvalidOwner.into());
-            } else {
-                if account
-                    .data_len()
-                    .ne(&pinocchio_token::state::TokenAccount::LEN)
-                {
-                    return Err(PinocchioError::InvalidAccountData.into());
-                }
+            }
+            if account.data_len() != pinocchio_token::state::TokenAccount::LEN {
+                return Err(PinocchioError::InvalidAccountData.into());
             }
         } else {
             let data = account.try_borrow_data()?;
 
-            if data.len().ne(&pinocchio_token::state::TokenAccount::LEN) {
-                if data.len().le(&TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET) {
+            if data.len() != pinocchio_token::state::TokenAccount::LEN {
+                if data.len() <= TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET {
                     return Err(PinocchioError::InvalidAccountData.into());
                 }
-                if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET]
-                    .ne(&TOKEN_2022_TOKEN_ACCOUNT_DISCRIMINATOR)
-                {
+                if data[TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET] != TOKEN_2022_TOKEN_ACCOUNT_DISCRIMINATOR {
                     return Err(PinocchioError::InvalidAccountData.into());
                 }
             }
@@ -511,7 +498,7 @@ impl AccountCheck for ProgramAccount {
             return Err(PinocchioError::InvalidOwner.into());
         }
 
-        if account.data_len().ne(&crate::state::Escrow::LEN) {
+        if account.data_len() != crate::state::Escrow::LEN {
             return Err(PinocchioError::InvalidAccountData.into());
         }
 
@@ -527,7 +514,6 @@ impl ProgramAccountInit for ProgramAccount {
         space: usize,
     ) -> ProgramResult {
         let lamports = Rent::get()?.minimum_balance(space);
-
         let signers = [Signer::from(seeds)];
 
         CreateAccount {
